@@ -1,13 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyparser = require('body-parser');
-const firebase = require('./config/firebaseconfig');
-const login = require('./controllers/login');
+const authController = require('./controllers/login');
 const getUserController = require('./controllers/getUser');
 const goalController = require('./controllers/createGoal');
 const getGoalsController = require('./controllers/getGoals');
 const dbHandlers = require('./lib/createDoc');
+const firebase = require('./config/firebaseconfig');
 const {verifyTokenMiddleware} = require('./middleware/authenticate');
+
 const app = express();
 const port = 5000;
 
@@ -19,23 +21,24 @@ app.listen(port, () => {
 });
 app.post('/api/register', async (req,res) => {
     try {
-        const {email, password} = req.body;
+        const {email, password, name} = req.body;
         const userRecord = await firebase.admin.auth().createUser({
             email,
             password
         });
         const uid = userRecord.uid;
-        await dbHandlers.createUserDocument(uid);
+        await dbHandlers.createUserDocument(uid,name);
         res.status(201).send("User registered successfully");
     }
     catch(error){
         res.status(400).send(error.message);
     }
 })
-app.post('/api/login', login);
+app.post('/api/login', authController.loginUser);
 app.post('/api/getUser', getUserController);
 app.post('/api/createGoal', goalController);
-app.post('/api/getGoals', verifyTokenMiddleware, getGoalsController);
+app.get('/api/getGoals', verifyTokenMiddleware, getGoalsController);
+app.post('/api/refreshToken', authController.getRefreshToken);
 
 app.get('/',(req,res) => {
     res.send('Hello World');
