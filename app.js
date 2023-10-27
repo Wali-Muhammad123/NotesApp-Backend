@@ -36,9 +36,18 @@ app.post('/api/register', async (req,res) => {
 })
 app.post('/api/login', authController.loginUser);
 app.post('/api/getUser', getUserController);
-app.post('/api/createGoal', goalController);
+app.post('/api/createGoal',verifyTokenMiddleware, goalController);
 app.get('/api/getGoals', verifyTokenMiddleware, getGoalsController);
 app.post('/api/refreshToken', authController.getRefreshToken);
+app.post('/api/deleteGoal', verifyTokenMiddleware, async (req,res) => {
+    try {
+        const {uid, goalId} = req.body;
+        const doc = await firebase.db.collection('users').doc(uid).collection('goals').doc(goalId).delete();
+        res.status(200).send("Goal deleted successfully");
+    } catch (error) {
+        res.status(400).send(error.message);
+    }
+});
 
 app.get('/',(req,res) => {
     res.send('Hello World');
